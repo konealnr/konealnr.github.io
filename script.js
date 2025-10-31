@@ -9,6 +9,18 @@ let siteSettings = {
     contactPhone: '+1 (555) 123-4567'
 };
 
+// Admin Authentication
+let ADMIN_PASSWORD = 'mcosmetis2024'; // Contraseña por defecto
+let isAdminAuthenticated = false;
+
+// Cargar contraseña personalizada si existe
+document.addEventListener('DOMContentLoaded', function () {
+    const savedPassword = localStorage.getItem('mcosmetis_admin_password');
+    if (savedPassword) {
+        ADMIN_PASSWORD = savedPassword;
+    }
+});
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function () {
     loadData();
@@ -16,15 +28,42 @@ document.addEventListener('DOMContentLoaded', function () {
     renderCatalog();
     updateCartCount();
     loadAdminProducts();
+
+    // Aplicar configuraciones guardadas
+    applySettings();
+
+    // Configurar previsualizaciones de imágenes
+    setupImagePreviews();
 });
+
+// Aplicar configuraciones guardadas al cargar la página
+function applySettings() {
+    if (siteSettings.title) {
+        document.title = `${siteSettings.title} - Skincare Premium`;
+        const logoTitle = document.querySelector('.logo h1');
+        if (logoTitle) logoTitle.textContent = siteSettings.title;
+    }
+
+    if (siteSettings.description) {
+        const logoDesc = document.querySelector('.logo p');
+        if (logoDesc) logoDesc.textContent = siteSettings.description;
+    }
+
+    // Actualizar información de contacto
+    const contactItems = document.querySelectorAll('.contact-item span');
+    if (contactItems.length >= 2) {
+        contactItems[0].textContent = siteSettings.contactPhone;
+        contactItems[1].textContent = siteSettings.contactEmail;
+    }
+}
 
 // Data Management
 function loadData() {
     // Load from localStorage or use default data
-    const savedProducts = localStorage.getItem('products');
-    const savedCatalog = localStorage.getItem('catalogItems');
-    const savedCart = localStorage.getItem('cart');
-    const savedSettings = localStorage.getItem('siteSettings');
+    const savedProducts = localStorage.getItem('mcosmetis_products');
+    const savedCatalog = localStorage.getItem('mcosmetis_catalogItems');
+    const savedCart = localStorage.getItem('mcosmetis_cart');
+    const savedSettings = localStorage.getItem('mcosmetis_siteSettings');
 
     if (savedProducts) {
         products = JSON.parse(savedProducts);
@@ -93,13 +132,62 @@ function loadData() {
     if (savedSettings) {
         siteSettings = JSON.parse(savedSettings);
     }
+
+    // Verificar integridad de los datos
+    verifyDataIntegrity();
+}
+
+// Verificar integridad de los datos
+function verifyDataIntegrity() {
+    let dataFixed = false;
+
+    // Verificar que products sea un array
+    if (!Array.isArray(products)) {
+        products = [];
+        dataFixed = true;
+    }
+
+    // Verificar que catalogItems sea un array
+    if (!Array.isArray(catalogItems)) {
+        catalogItems = [];
+        dataFixed = true;
+    }
+
+    // Verificar que cart sea un array
+    if (!Array.isArray(cart)) {
+        cart = [];
+        dataFixed = true;
+    }
+
+    // Verificar que siteSettings sea un objeto
+    if (!siteSettings || typeof siteSettings !== 'object') {
+        siteSettings = {
+            title: 'm.cosmetis x Farmasi',
+            description: 'Productos de skincare premium',
+            contactEmail: 'info@mcosmetis.com',
+            contactPhone: '+1 (555) 123-4567'
+        };
+        dataFixed = true;
+    }
+
+    // Guardar datos corregidos si es necesario
+    if (dataFixed) {
+        saveData();
+        console.log('Datos corregidos y guardados');
+    }
 }
 
 function saveData() {
-    localStorage.setItem('products', JSON.stringify(products));
-    localStorage.setItem('catalogItems', JSON.stringify(catalogItems));
-    localStorage.setItem('cart', JSON.stringify(cart));
-    localStorage.setItem('siteSettings', JSON.stringify(siteSettings));
+    try {
+        localStorage.setItem('mcosmetis_products', JSON.stringify(products));
+        localStorage.setItem('mcosmetis_catalogItems', JSON.stringify(catalogItems));
+        localStorage.setItem('mcosmetis_cart', JSON.stringify(cart));
+        localStorage.setItem('mcosmetis_siteSettings', JSON.stringify(siteSettings));
+        console.log('Datos guardados exitosamente');
+    } catch (error) {
+        console.error('Error al guardar datos:', error);
+        showNotification('Error al guardar los cambios');
+    }
 }
 
 // Product Management
@@ -130,14 +218,35 @@ function filterProducts(category) {
     renderProducts(category);
 }
 
-function addProduct(event) {
+async function addProduct(event) {
     event.preventDefault();
+
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
 
     const name = document.getElementById('product-name').value;
     const price = parseFloat(document.getElementById('product-price').value);
     const category = document.getElementById('product-category').value;
     const description = document.getElementById('product-description').value;
-    const image = document.getElementById('product-image').value;
+    const imageFile = document.getElementById('product-image-file').files[0];
+
+    if (!name || !price || !category || !description) {
+        showNotification('Por favor completa todos los campos obligatorios');
+        return;
+    }
+
+    // Procesar imagen si existe
+    let imageData = '';
+    if (imageFile) {
+        try {
+            imageData = await fileToBase64(imageFile);
+        } catch (error) {
+            showNotification('Error al procesar la imagen');
+            return;
+        }
+    }
 
     const newProduct = {
         id: Date.now(),
@@ -145,7 +254,7 @@ function addProduct(event) {
         price,
         category,
         description,
-        image
+        image: imageData
     };
 
     products.push(newProduct);
@@ -156,10 +265,22 @@ function addProduct(event) {
     // Reset form
     event.target.reset();
 
+    // Reset image preview
+    const preview = document.getElementById('product-image-preview');
+    if (preview) {
+        preview.innerHTML = '';
+        preview.classList.add('empty');
+    }
+
     showNotification('Producto agregado exitosamente');
 }
 
 function deleteProduct(id) {
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
+
     if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
         products = products.filter(p => p.id !== id);
         saveData();
@@ -184,18 +305,39 @@ function renderCatalog() {
     `).join('');
 }
 
-function addCatalogItem(event) {
+async function addCatalogItem(event) {
     event.preventDefault();
+
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
 
     const title = document.getElementById('catalog-title').value;
     const description = document.getElementById('catalog-description').value;
-    const image = document.getElementById('catalog-image').value;
+    const imageFile = document.getElementById('catalog-image-file').files[0];
+
+    if (!title || !description) {
+        showNotification('Por favor completa todos los campos obligatorios');
+        return;
+    }
+
+    // Procesar imagen si existe
+    let imageData = '';
+    if (imageFile) {
+        try {
+            imageData = await fileToBase64(imageFile);
+        } catch (error) {
+            showNotification('Error al procesar la imagen');
+            return;
+        }
+    }
 
     const newItem = {
         id: Date.now(),
         title,
         description,
-        image
+        image: imageData
     };
 
     catalogItems.push(newItem);
@@ -205,7 +347,48 @@ function addCatalogItem(event) {
     // Reset form
     event.target.reset();
 
+    // Reset image preview
+    const preview = document.getElementById('catalog-image-preview');
+    if (preview) {
+        preview.innerHTML = '';
+        preview.classList.add('empty');
+    }
+
     showNotification('Elemento agregado al catálogo exitosamente');
+}
+
+// Función para eliminar elementos del catálogo
+function deleteCatalogItem(id) {
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
+
+    if (confirm('¿Estás seguro de que quieres eliminar este elemento del catálogo?')) {
+        catalogItems = catalogItems.filter(item => item.id !== id);
+        saveData();
+        renderCatalog();
+        showNotification('Elemento eliminado del catálogo exitosamente');
+    }
+}
+
+// Cargar lista de catálogo en admin
+function loadAdminCatalog() {
+    const adminCatalogList = document.getElementById('admin-catalog-list');
+
+    if (!adminCatalogList) return;
+
+    adminCatalogList.innerHTML = catalogItems.map(item => `
+        <div class="admin-product-item">
+            <div class="admin-product-info">
+                <h4>${item.title}</h4>
+                <p>${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}</p>
+            </div>
+            <button class="delete-product" onclick="deleteCatalogItem(${item.id})">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
+    `).join('');
 }
 
 // Cart Management
@@ -339,10 +522,36 @@ function toggleAdmin() {
     if (adminPanel.classList.contains('open')) {
         adminPanel.classList.remove('open');
         adminOverlay.style.display = 'none';
+        isAdminAuthenticated = false;
+
+        // Resetear el ícono del botón de admin
+        const adminBtn = document.querySelector('.admin-btn i');
+        if (adminBtn) {
+            adminBtn.className = 'fas fa-cog';
+            adminBtn.style.color = '';
+        }
     } else {
+        // Verificar autenticación antes de abrir el panel
+        if (!isAdminAuthenticated) {
+            const password = prompt('Ingresa la contraseña de administrador:');
+            if (password !== ADMIN_PASSWORD) {
+                showNotification('Contraseña incorrecta. Acceso denegado.');
+                return;
+            }
+            isAdminAuthenticated = true;
+
+            // Cambiar el ícono del botón de admin para mostrar que está autenticado
+            const adminBtn = document.querySelector('.admin-btn i');
+            if (adminBtn) {
+                adminBtn.className = 'fas fa-user-shield';
+                adminBtn.style.color = '#28a745';
+            }
+        }
+
         adminPanel.classList.add('open');
         adminOverlay.style.display = 'block';
         loadAdminProducts();
+        loadAdminCatalog();
     }
 }
 
@@ -359,6 +568,8 @@ function showAdminTab(tabName) {
 
     if (tabName === 'settings') {
         loadSettings();
+    } else if (tabName === 'catalog') {
+        loadAdminCatalog();
     }
 }
 
@@ -388,10 +599,25 @@ function loadSettings() {
 function updateSettings(event) {
     event.preventDefault();
 
-    siteSettings.title = document.getElementById('site-title').value;
-    siteSettings.description = document.getElementById('site-description').value;
-    siteSettings.contactEmail = document.getElementById('contact-email').value;
-    siteSettings.contactPhone = document.getElementById('contact-phone').value;
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
+
+    const title = document.getElementById('site-title').value;
+    const description = document.getElementById('site-description').value;
+    const email = document.getElementById('contact-email').value;
+    const phone = document.getElementById('contact-phone').value;
+
+    if (!title || !description || !email || !phone) {
+        showNotification('Por favor completa todos los campos');
+        return;
+    }
+
+    siteSettings.title = title;
+    siteSettings.description = description;
+    siteSettings.contactEmail = email;
+    siteSettings.contactPhone = phone;
 
     saveData();
 
@@ -402,10 +628,217 @@ function updateSettings(event) {
 
     // Update contact info
     const contactItems = document.querySelectorAll('.contact-item span');
-    contactItems[0].textContent = siteSettings.contactPhone;
-    contactItems[1].textContent = siteSettings.contactEmail;
+    if (contactItems.length >= 2) {
+        contactItems[0].textContent = siteSettings.contactPhone;
+        contactItems[1].textContent = siteSettings.contactEmail;
+    }
 
     showNotification('Configuración actualizada exitosamente');
+}
+
+// Cambiar contraseña de administrador
+function changeAdminPassword() {
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
+
+    const currentPassword = prompt('Ingresa la contraseña actual:');
+    if (currentPassword !== ADMIN_PASSWORD) {
+        showNotification('Contraseña actual incorrecta');
+        return;
+    }
+
+    const newPassword = prompt('Ingresa la nueva contraseña (mínimo 8 caracteres):');
+    if (!newPassword || newPassword.length < 8) {
+        showNotification('La nueva contraseña debe tener al menos 8 caracteres');
+        return;
+    }
+
+    const confirmPassword = prompt('Confirma la nueva contraseña:');
+    if (newPassword !== confirmPassword) {
+        showNotification('Las contraseñas no coinciden');
+        return;
+    }
+
+    // Guardar nueva contraseña en localStorage
+    localStorage.setItem('mcosmetis_admin_password', newPassword);
+    showNotification('Contraseña cambiada exitosamente. Recarga la página para aplicar los cambios.');
+}
+
+// Exportar datos
+function exportData() {
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
+
+    const data = {
+        products: products,
+        catalogItems: catalogItems,
+        siteSettings: siteSettings,
+        exportDate: new Date().toISOString()
+    };
+
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `mcosmetis_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+
+    showNotification('Datos exportados exitosamente');
+}
+
+// Importar datos
+function importData() {
+    if (!isAdminAuthenticated) {
+        showNotification('Acceso denegado. Debes autenticarte como administrador.');
+        return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const data = JSON.parse(e.target.result);
+
+                if (data.products && data.catalogItems && data.siteSettings) {
+                    if (confirm('¿Estás seguro de que quieres importar estos datos? Esto sobrescribirá todos los datos actuales.')) {
+                        products = data.products;
+                        catalogItems = data.catalogItems;
+                        siteSettings = data.siteSettings;
+
+                        saveData();
+                        renderProducts();
+                        renderCatalog();
+                        loadAdminProducts();
+                        applySettings();
+
+                        showNotification('Datos importados exitosamente');
+                    }
+                } else {
+                    showNotification('Archivo de respaldo inválido');
+                }
+            } catch (error) {
+                showNotification('Error al leer el archivo de respaldo');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    input.click();
+}
+
+// Configurar previsualizaciones de imágenes
+function setupImagePreviews() {
+    // Preview para productos
+    const productImageFile = document.getElementById('product-image-file');
+    const productImagePreview = document.getElementById('product-image-preview');
+
+    if (productImageFile && productImagePreview) {
+        productImagePreview.classList.add('empty');
+
+        productImageFile.addEventListener('change', function (event) {
+            handleImagePreview(event, productImagePreview);
+        });
+    }
+
+    // Preview para catálogo
+    const catalogImageFile = document.getElementById('catalog-image-file');
+    const catalogImagePreview = document.getElementById('catalog-image-preview');
+
+    if (catalogImageFile && catalogImagePreview) {
+        catalogImagePreview.classList.add('empty');
+
+        catalogImageFile.addEventListener('change', function (event) {
+            handleImagePreview(event, catalogImagePreview);
+        });
+    }
+}
+
+// Manejar preview de imagen
+function handleImagePreview(event, previewElement) {
+    const file = event.target.files[0];
+
+    if (file) {
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            showNotification('Por favor selecciona un archivo de imagen válido');
+            return;
+        }
+
+        // Validar tamaño (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('La imagen es demasiado grande. Máximo 5MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            previewElement.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            previewElement.classList.remove('empty');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        previewElement.innerHTML = '';
+        previewElement.classList.add('empty');
+    }
+}
+
+// Convertir archivo a base64 con compresión
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+
+        img.onload = function () {
+            // Calcular nuevas dimensiones (máximo 800px de ancho)
+            const maxWidth = 800;
+            const maxHeight = 600;
+            let { width, height } = img;
+
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+
+            if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+            }
+
+            // Configurar canvas
+            canvas.width = width;
+            canvas.height = height;
+
+            // Dibujar imagen redimensionada
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convertir a base64 con compresión
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            resolve(compressedDataUrl);
+        };
+
+        img.onerror = () => reject(new Error('Error al cargar la imagen'));
+
+        // Crear URL temporal para la imagen
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Error al leer el archivo'));
+        reader.readAsDataURL(file);
+    });
 }
 
 // Contact Form
