@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>m.cosmetis x Farmasi - Skincare Premium</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>m.cosmetis x Farmasi</h1>
+                <p>Skincare Premium</p>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="#home">Inicio</a></li>
+                    <li><a href="#products">Productos</a></li>
+                    <li><a href="#catalog">Catálogo</a></li>
+                    <li><a href="#about">Nosotros</a></li>
+                    <li><a href="#contact">Contacto</a></li>
+                </ul>
+            </nav>
+            <div class="header-actions">
+                <button class="cart-btn" onclick="toggleCart()">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </button>
+                <button class="admin-btn" onclick="toggleAdmin()">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h2>Descubre tu Belleza Natural</h2>
+                <p>Productos de skincare premium que transforman tu rutina de cuidado</p>
+                <button class="cta-btn" onclick="scrollToSection('products')">Ver Productos</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="products-section">
+        <div class="container">
+            <h2>Nuestros Productos</h2>
+            <div class="product-categories">
+                <button class="category-btn active" onclick="filterProducts('all')">Todos</button>
+                <button class="category-btn" onclick="filterProducts('cleansers')">Limpiadores</button>
+                <button class="category-btn" onclick="filterProducts('serums')">Serums</button>
+                <button class="category-btn" onclick="filterProducts('moisturizers')">Hidratantes</button>
+                <button class="category-btn" onclick="filterProducts('suncare')">Protección Solar</button>
+            </div>
+            <div class="products-grid" id="products-grid">
+                <!-- Products will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Catalog Section -->
+    <section id="catalog" class="catalog-section">
+        <div class="container">
+            <h2>Catálogo Completo</h2>
+            <div class="catalog-grid" id="catalog-grid">
+                <!-- Catalog items will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <h2>Sobre Nosotros</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>m.cosmetis x Farmasi</h3>
+                    <p>Somos especialistas en productos de skincare premium que combinan la innovación científica con
+                        ingredientes naturales de la más alta calidad.</p>
+                    <p>Nuestra misión es ayudarte a descubrir y mantener la belleza natural de tu piel con productos
+                        efectivos y seguros.</p>
+                </div>
+                <div class="about-features">
+                    <div class="feature">
+                        <i class="fas fa-leaf"></i>
+                        <h4>Ingredientes Naturales</h4>
+                        <p>Fórmulas con ingredientes naturales cuidadosamente seleccionados</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-flask"></i>
+                        <h4>Ciencia Avanzada</h4>
+                        <p>Tecnología de vanguardia en cada producto</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-heart"></i>
+                        <h4>Cuidado Personalizado</h4>
+                        <p>Soluciones adaptadas a cada tipo de piel</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2>Contacto</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>¿Tienes preguntas?</h3>
+                    <p>Estamos aquí para ayudarte con cualquier consulta sobre nuestros productos</p>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+1 (555) 123-4567</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>info@mcosmetis.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>123 Beauty Street, Ciudad</span>
+                    </div>
+                </div>
+                <form class="contact-form" onsubmit="submitContact(event)">
+                    <input type="text" placeholder="Tu nombre" required>
+                    <input type="email" placeholder="Tu email" required>
+                    <textarea placeholder="Tu mensaje" rows="5" required></textarea>
+                    <button type="submit">Enviar Mensaje</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shopping Cart -->
+    <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Carrito de Compras</h3>
+            <button class="close-cart" onclick="toggleCart()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Cart items will be loaded here -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <strong>Total: $<span id="cart-total">0.00</span></strong>
+            </div>
+            <button class="checkout-btn" onclick="checkout()">Proceder al Pago</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-overlay" id="admin-overlay" onclick="toggleAdmin()"></div>
+    <div class="admin-panel" id="admin-panel">
+        <div class="admin-header">
+            <h3>Panel de Administración</h3>
+            <button class="close-admin" onclick="toggleAdmin()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="admin-content">
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="showAdminTab('products')">Productos</button>
+                <button class="admin-tab" onclick="showAdminTab('catalog')">Catálogo</button>
+                <button class="admin-tab" onclick="showAdminTab('settings')">Configuración</button>
+            </div>
+            <div class="admin-tab-content" id="admin-products">
+                <h4>Gestionar Productos</h4>
+                <form class="admin-form" onsubmit="addProduct(event)">
+                    <input type="text" id="product-name" placeholder="Nombre del producto" required>
+                    <input type="number" id="product-price" placeholder="Precio" step="0.01" required>
+                    <select id="product-category" required>
+                        <option value="">Seleccionar categoría</option>
+                        <option value="cleansers">Limpiadores</option>
+                        <option value="serums">Serums</option>
+                        <option value="moisturizers">Hidratantes</option>
+                        <option value="suncare">Protección Solar</option>
+                    </select>
+                    <textarea id="product-description" placeholder="Descripción del producto" required></textarea>
+                    <input type="url" id="product-image" placeholder="URL de la imagen">
+                    <button type="submit">Agregar Producto</button>
+                </form>
+                <div class="admin-products-list" id="admin-products-list">
+                    <!-- Admin products list will be loaded here -->
+                </div>
+            </div>
+            <div class="admin-tab-content" id="admin-catalog" style="display: none;">
+                <h4>Gestionar Catálogo</h4>
+                <form class="admin-form" onsubmit="addCatalogItem(event)">
+                    <input type="text" id="catalog-title" placeholder="Título del catálogo" required>
+                    <textarea id="catalog-description" placeholder="Descripción" required></textarea>
+                    <input type="url" id="catalog-image" placeholder="URL de la imagen">
+                    <button type="submit">Agregar al Catálogo</button>
+                </form>
+            </div>
+            <div class="admin-tab-content" id="admin-settings" style="display: none;">
+                <h4>Configuración del Sitio</h4>
+                <form class="admin-form" onsubmit="updateSettings(event)">
+                    <input type="text" id="site-title" placeholder="Título del sitio" value="m.cosmetis x Farmasi">
+                    <textarea id="site-description"
+                        placeholder="Descripción del sitio">Productos de skincare premium</textarea>
+                    <input type="email" id="contact-email" placeholder="Email de contacto" value="info@mcosmetis.com">
+                    <input type="tel" id="contact-phone" placeholder="Teléfono de contacto" value="+1 (555) 123-4567">
+                    <button type="submit">Guardar Configuración</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>m.cosmetis x Farmasi</h4>
+                    <p>Tu belleza natural, nuestra pasión</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces Rápidos</h4>
+                    <ul>
+                        <li><a href="#home">Inicio</a></li>
+                        <li><a href="#products">Productos</a></li>
+                        <li><a href="#catalog">Catálogo</a></li>
+                        <li><a href="#contact">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Síguenos</h4>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 m.cosmetis x Farmasi. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
