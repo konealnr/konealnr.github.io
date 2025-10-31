@@ -880,3 +880,59 @@ body {
     opacity: 0.6;
     pointer-events: none;
 }
+
+/* Image Upload Styles */
+.image-upload-section {
+    margin: 1rem 0;
+}
+
+.image-preview {
+    width: 100%;
+    max-width: 200px;
+    height: 150px;
+    border: 2px dashed var(--primary-pink);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem 0;
+    background: var(--light-gray);
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.image-preview.empty {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.image-preview.empty::before {
+    content: "Vista previa de la imagen";
+}
+
+input[type="file"] {
+    padding: 0.8rem;
+    border: 2px solid var(--primary-pink);
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 300;
+    background: var(--white);
+    cursor: pointer;
+    width: 100%;
+}
+
+input[type="file"]:hover {
+    border-color: var(--accent-pink);
+}
+
+input[type="file"]:focus {
+    outline: none;
+    border-color: var(--dark-pink);
+    box-shadow: 0 0 0 3px rgba(214, 51, 132, 0.1);
+}
